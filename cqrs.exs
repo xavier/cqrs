@@ -68,9 +68,7 @@ defmodule Entity do
       end
 
       def new do
-        unquote(fields)
-        |> Enum.into(%{})
-        |> Dict.put_new(:__struct__, __MODULE__)
+        %__MODULE__{}
       end
 
       def trigger(cart, event) do
