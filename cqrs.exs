@@ -1,3 +1,5 @@
+# <framework code>
+
 defmodule UniqueID do
 
   @x           "~2.16.0b"
@@ -56,7 +58,7 @@ defmodule EventStore do
   def fetch(uuid) do
     Agent.get(__MODULE__, fn (events) ->
       events
-      |> Enum.filter(fn {event_uuid, event} -> event_uuid == uuid end)
+      |> Enum.filter(fn {event_uuid, _event} -> event_uuid == uuid end)
       |> Enum.map(fn {_, event} -> event end)
       |> Enum.reverse
     end)
@@ -92,33 +94,51 @@ defmodule DomainRepository do
 
 end
 
+
+defmodule Entity do
+
+  defmacro __using__(fields: fields) do
+
+    fields = [{:uuid, nil} | fields]
+
+    quote do
+
+      defstruct unquote(fields)
+
+      def get(uuid) do
+        DomainRepository.get(__MODULE__, uuid)
+      end
+
+      def new do
+        %__MODULE__{}
+      end
+
+      def trigger(cart, event) do
+        DomainRepository.trigger(cart, event)
+      end
+
+    end
+  end
+
+end
+
+# </framework code>
+
 defmodule PotionStore do
   defmodule ShoppingCart do
 
-    defstruct uuid: nil, items: []
-
-    alias __MODULE__, as: Cart
-
-    def new do
-      %Cart{}
-    end
+    use Entity, fields: [items: []]
 
     def create(uuid) do
       event = {:cart_created, %{uuid: uuid}}
-      cart = %Cart{}
-      DomainRepository.trigger(cart, event)
+      cart = new()
+      trigger(cart, event)
     end
 
     def add_item(cart, item) do
       event = {:item_added, %{item: item}}
-      DomainRepository.trigger(cart, event)
+      trigger(cart, event)
     end
-
-    def get(uuid) do
-      DomainRepository.get(__MODULE__, uuid)
-    end
-
-    #
 
     def apply(cart, {:cart_created, %{uuid: uuid}}) do
       %{cart | uuid: uuid}
@@ -130,6 +150,8 @@ defmodule PotionStore do
 
   end
 end
+
+# Listeners
 
 defmodule CartItemCounter do
   use GenEvent
