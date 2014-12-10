@@ -140,6 +140,11 @@ defmodule PotionStore do
       trigger(cart, event)
     end
 
+    def remove_item(cart, item) do
+      event = {:item_removed, %{item: item}}
+      trigger(cart, event)
+    end
+
     def apply(cart, {:cart_created, %{uuid: uuid}}) do
       %{cart | uuid: uuid}
     end
@@ -148,6 +153,9 @@ defmodule PotionStore do
       %{cart | items: [item|cart.items]}
     end
 
+    def apply(cart, {:item_removed, %{item: item}}) do
+      %{cart | items: List.delete(cart.items, item)}
+    end
   end
 end
 
@@ -157,24 +165,25 @@ defmodule CartItemCounter do
   use GenEvent
 
   def init(_opts) do
-    {:ok, 0}
+    {:ok, HashDict.new}
   end
 
-  def handle_event({{:item_added, _}, uuid}, counter) do
-    {:ok, counter + 1}
+  def handle_event({{:item_added, %{item: item}}, _uuid}, counters) do
+    counters = Dict.update(counters, item, 1, fn(count) -> count + 1 end)
+    {:ok, counters}
   end
 
-  def handle_event({{:item_removed, _}, uuid}, counter) do
-    {:ok, counter - 1}
+  def handle_event({{:item_removed, %{item: item}}, _uuid}, counters) do
+    counters = Dict.update!(counters, item, fn(count) -> count - 1 end)
+    {:ok, counters}
   end
 
-  def handle_event(_, counter) do
-    {:ok, counter}
+  def handle_event(_, counters) do
+    {:ok, counters}
   end
 
-  def handle_call(:current_state, counter) do
-    # :ok, reply, new state
-    {:ok, counter, counter}
+  def handle_call(:current_state, counters) do
+    {:ok, counters, counters}
   end
 
 end
@@ -215,9 +224,16 @@ IO.puts "====================="
 cart = PotionStore.ShoppingCart.get(cart_uuid)
 IO.inspect cart
 
+IO.puts "====================="
+
 cart2 =
   PotionStore.ShoppingCart.create(UniqueID.generate)
+  |> PotionStore.ShoppingCart.add_item("Coke classic")
+  |> PotionStore.ShoppingCart.add_item("Coke classic")
   |> PotionStore.ShoppingCart.add_item("Doppio espresso")
+  |> PotionStore.ShoppingCart.remove_item("Coke classic")
+
+IO.inspect cart2
 
 counter = EventBus.current_state(CartItemCounter)
-IO.puts "Items currently added to carts: #{counter}"
+IO.puts "Items currently added to carts: #{inspect counter}"
