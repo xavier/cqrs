@@ -19,7 +19,7 @@ defmodule EventStore do
   def fetch(uuid) do
     Agent.get(__MODULE__, fn (events) ->
       events
-      |> Enum.filter(fn {event_uuid, event} -> event_uuid == uuid end)
+      |> Enum.filter(fn {event_uuid, _event} -> event_uuid == uuid end)
       |> Enum.map(fn {_, event} -> event end)
       |> Enum.reverse
     end)
