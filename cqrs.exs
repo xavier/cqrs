@@ -96,6 +96,10 @@ defmodule PotionStore do
       trigger(cart, event)
     end
 
+    def create do
+      uuid = UniqueID.generate
+      {uuid, create(uuid)}
+    end
 
 
     def add_item(cart, item) do
@@ -122,6 +126,11 @@ defmodule PotionStore do
       event = {:user_created, %{uuid: uuid, name: name, age: age, wizard: wizard}}
       user = new()
       trigger(user, event)
+    end
+
+    def create(name, age, wizard) do
+      uuid = UniqueID.generate
+      {uuid, create(uuid, name, age, wizard)}
     end
 
     def changed_name(user, new_name) do
@@ -164,13 +173,12 @@ end
 
 EventStore.start_link
 
-cart_uuid = UniqueID.generate
+{cart_uuid, cart} = PotionStore.ShoppingCart.create
 
-cart =
-  PotionStore.ShoppingCart.create(cart_uuid)
-  |> PotionStore.ShoppingCart.add_item("Artline 100N")
-  |> PotionStore.ShoppingCart.add_item("Coke classic")
-  |> PotionStore.ShoppingCart.add_item("Coke zero")
+cart = cart
+      |> PotionStore.ShoppingCart.add_item("Artline 100N")
+      |> PotionStore.ShoppingCart.add_item("Coke classic")
+      |> PotionStore.ShoppingCart.add_item("Coke zero")
 IO.inspect cart
 
 IO.puts "====================="
@@ -181,13 +189,13 @@ IO.inspect cart
 IO.puts "##################"
 
 
-user_uuid = UniqueID.generate
+{user_uuid, user} = PotionStore.User.create("Harry Porter", 17, false)
 
-user =
-  PotionStore.User.create(user_uuid, "Harry Porter", 17, false)
-  |> PotionStore.User.changed_name("Harry Potter")
-  |> PotionStore.User.birthday
-  |> PotionStore.User.graduated_from_hogwarts
+user = user
+      |> PotionStore.User.changed_name("Harry Potter")
+      |> PotionStore.User.birthday
+      |> PotionStore.User.graduated_from_hogwarts
+
 IO.inspect user
 
 IO.puts "====================="
