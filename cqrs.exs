@@ -6,18 +6,18 @@ end
 
 defmodule EventBus do
 
-  @name {:local, __MODULE__}
+  @name __MODULE__
 
   def start_link do
-    :gen_event.start_link(@name)
-  end
-
-  def init(_) do
-    :ok
+    :gen_event.start_link({:local, @name})
   end
 
   def add_listener(listener) do
     :gen_event.add_handler(@name, listener, [])
+  end
+
+  def remove_listener(listener) do
+    :gen_event.delete_handler(@name, listener, [])
   end
 
   def listeners do
@@ -26,6 +26,11 @@ defmodule EventBus do
 
   def broadcast(uuid, event) do
     :gen_event.notify(@name, {event, uuid})
+  end
+
+  # Used for troubleshooting at this point
+  def current_state(listener) do
+    :gen_event.call(@name, listener, :current_state)
   end
 
 end
@@ -120,6 +125,32 @@ defmodule PotionStore do
   end
 end
 
+defmodule CartItemCounter do
+  use GenEvent
+
+  def init(_opts) do
+    {:ok, 0}
+  end
+
+  def handle_event({{:item_added, _}, uuid}, counter) do
+    {:ok, counter + 1}
+  end
+
+  def handle_event({{:item_removed, _}, uuid}, counter) do
+    {:ok, counter - 1}
+  end
+
+  def handle_event(_, counter) do
+    {:ok, counter}
+  end
+
+  def handle_call(:current_state, counter) do
+    # :ok, reply, new state
+    {:ok, counter, counter}
+  end
+
+end
+
 defmodule EventDebugger do
   use GenEvent
 
@@ -129,19 +160,16 @@ defmodule EventDebugger do
 
   def handle_event({event, uuid}, counter) do
     counter = counter + 1
-    IO.puts "Event ##{counter} #{inspect event}, UUID: #{inspect uuid}"
+    IO.puts "EventDebugger: Event##{counter} #{inspect event}, UUID: #{inspect uuid}"
     {:ok, counter}
   end
 
 end
 
-EventBus.start_link
 EventStore.start_link
+EventBus.start_link
 
-
-IO.inspect EventBus.listeners
-
-#EventBus.add_listener(ItemCounter)
+EventBus.add_listener(CartItemCounter)
 EventBus.add_listener(EventDebugger)
 
 cart_uuid = UniqueID.generate
@@ -151,9 +179,17 @@ cart =
   |> PotionStore.ShoppingCart.add_item("Artline 100N")
   |> PotionStore.ShoppingCart.add_item("Coke classic")
   |> PotionStore.ShoppingCart.add_item("Coke zero")
+
 IO.inspect cart
 
 IO.puts "====================="
 
 cart = PotionStore.ShoppingCart.get(cart_uuid)
 IO.inspect cart
+
+cart2 =
+  PotionStore.ShoppingCart.create(UniqueID.generate)
+  |> PotionStore.ShoppingCart.add_item("Doppio espresso")
+
+counter = EventBus.current_state(CartItemCounter)
+IO.puts "Items currently added to carts: #{counter}"
