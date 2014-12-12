@@ -1,13 +1,13 @@
 defmodule ExNihilo.Supervisor do
   use Supervisor
 
-  def start_link do
-    Supervisor.start_link(__MODULE__, [])
+  def start_link(storage) do
+    Supervisor.start_link(__MODULE__, [storage])
   end
 
-  def init([]) do
+  def init([storage]) do
     children = [
-      worker(ExNihilo.EventStore, [ExNihilo.EventStore.InMemory, []]),
+      worker(ExNihilo.EventStore, [storage, []]),
       worker(ExNihilo.EventBus, [])
     ]
 
