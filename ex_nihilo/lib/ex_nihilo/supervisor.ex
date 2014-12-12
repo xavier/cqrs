@@ -7,7 +7,7 @@ defmodule ExNihilo.Supervisor do
 
   def init([]) do
     children = [
-      worker(ExNihilo.EventStore, []),
+      worker(ExNihilo.EventStore, [ExNihilo.EventStore.InMemory, []]),
       worker(ExNihilo.EventBus, [])
     ]
 
