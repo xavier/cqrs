@@ -13,8 +13,20 @@ defmodule ExNihilo.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [applications: [:logger],
-     mod: {ExNihilo, storage: ExNihilo.EventStore.InMemory}]
+     mod: {ExNihilo, storage: storage()}]
   end
+
+  defp storage do
+    "EVENT_STORE"
+    |> System.get_env
+    |> storage
+  end
+
+  defp storage("ets"),    do: ExNihilo.EventStore.Ets
+  defp storage("mnesia"), do: ExNihilo.EventStore.Mnesia
+  defp storage("riak"),   do: ExNihilo.EventStore.Riak
+  defp storage(_),        do: ExNihilo.EventStore.InMemory
+
 
   # Dependencies can be Hex packages:
   #
