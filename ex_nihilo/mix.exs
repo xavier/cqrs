@@ -22,10 +22,11 @@ defmodule ExNihilo.Mixfile do
     |> storage
   end
 
-  defp storage("ets"),    do: ExNihilo.EventStore.Ets
-  defp storage("mnesia"), do: ExNihilo.EventStore.Mnesia
-  defp storage("riak"),   do: ExNihilo.EventStore.Riak
-  defp storage(_),        do: ExNihilo.EventStore.InMemory
+  defp storage("ets"),      do: ExNihilo.EventStore.Ets
+  defp storage("mnesia"),   do: ExNihilo.EventStore.Mnesia
+  defp storage("riak"),     do: ExNihilo.EventStore.Riak
+  defp storage("postgres"), do: ExNihilo.EventStore.Postgres
+  defp storage(_),          do: ExNihilo.EventStore.InMemory
 
 
   # Dependencies can be Hex packages:
@@ -38,6 +39,9 @@ defmodule ExNihilo.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    []
+    [
+      {:json, "~> 0.3.0"},
+      {:postgrex, "~> 0.5"}
+    ]
   end
 end
