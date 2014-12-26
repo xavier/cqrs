@@ -27,4 +27,8 @@ defmodule ExNihilo.EventBus do
     :gen_event.call(@name, listener, :current_state)
   end
 
+  def call(listener, fun) do
+    :gen_event.call(@name, listener, fun)
+  end
+
 end
